@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import ReactMarkdown from "react-markdown";
 
 type RisResultItem = {
   gericht: string;
@@ -46,7 +47,7 @@ const GERICHTE = ["OGH", "VwGH", "VfGH", "BVwG"] as const;
 export default function RisSearch() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
-  const [typ, setTyp] = useState<"judikatur" | "bundesrecht">("judikatur");
+  const [typ, setTyp] = useState<"judikatur" | "bundesrecht" | "bgbl" | "landesrecht">("judikatur");
   const [gericht, setGericht] = useState<string>("OGH");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -120,7 +121,7 @@ export default function RisSearch() {
     doSearch({ term, pageNum: 1 });
   };
 
-  const handleTypChange = (newTyp: "judikatur" | "bundesrecht") => {
+  const handleTypChange = (newTyp: "judikatur" | "bundesrecht" | "bgbl" | "landesrecht") => {
     setTyp(newTyp);
     setPage(1);
     if (activeSearch) doSearch({ pageNum: 1, searchTyp: newTyp });
@@ -190,19 +191,24 @@ export default function RisSearch() {
 
           {/* Typ-Auswahl */}
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-muted-foreground mr-1">Quelle:</span>
-            {(["judikatur", "bundesrecht"] as const).map((t) => (
+            <span className="text-sm text-muted-foreground mr-1">Suche in:</span>
+            {([
+              { key: "judikatur", label: "Urteile" },
+              { key: "bundesrecht", label: "Bundesgesetze" },
+              { key: "landesrecht", label: "Landesrecht" },
+              { key: "bgbl", label: "BGBl" },
+            ] as const).map(({ key, label }) => (
               <button
-                key={t}
+                key={key}
                 type="button"
-                onClick={() => handleTypChange(t)}
+                onClick={() => handleTypChange(key)}
                 className={`text-sm px-3 py-1 rounded-full border transition-all font-medium ${
-                  typ === t
+                  typ === key
                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
                     : "bg-card text-muted-foreground border-border hover:border-accent hover:text-accent"
                 }`}
               >
-                {t === "judikatur" ? "Judikatur" : "Bundesrecht"}
+                {label}
               </button>
             ))}
           </div>
@@ -320,7 +326,11 @@ export default function RisSearch() {
               <h2 className="text-xl font-medium text-primary">
                 <span className="font-bold">{data.total}</span> Treffer für{" "}
                 <span className="italic">&lsquo;{activeSearch}&rsquo;</span>
-                {typ === "bundesrecht" && <Badge variant="outline" className="ml-2">Bundesrecht</Badge>}
+                {typ !== "judikatur" && (
+                  <Badge variant="outline" className="ml-2">
+                    {typ === "bundesrecht" ? "Bundesgesetze" : typ === "landesrecht" ? "Landesrecht" : "BGBl"}
+                  </Badge>
+                )}
               </h2>
             </div>
 
@@ -494,7 +504,9 @@ export default function RisSearch() {
                     )}
                   </Button>
                 </div>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap">{analyze.summary}</div>
+                <div className="prose prose-sm max-w-none text-foreground prose-headings:text-primary prose-headings:font-serif prose-strong:text-foreground prose-li:marker:text-accent">
+                  <ReactMarkdown>{analyze.summary}</ReactMarkdown>
+                </div>
                 <p className="text-xs text-muted-foreground pt-2 border-t mt-3">
                   KI-generierte Analyse – ersetzt keine Rechtsberatung.
                 </p>
