@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: process.env.CLAUDE_MODEL ?? "claude-sonnet-4-20250514",
         max_tokens: 4096,
-        system: "Du bist ein österreichischer Rechtsexperte. Analysiere den folgenden Urteilstext und beantworte die Frage des Nutzers präzise und verständlich auf Deutsch. Zitiere relevante Passagen wenn hilfreich. Halte die Antwort strukturiert und klar.",
+        system: "Du bist ein österreichischer Rechtsexperte. Analysiere das folgende Dokument (Urteil, Gesetz, Verordnung oder Erlass) und beantworte die Frage des Nutzers präzise und verständlich auf Deutsch. Erkläre die praktischen Auswirkungen und Implikationen. Zitiere relevante Passagen wenn hilfreich. Halte die Antwort strukturiert mit Markdown-Formatierung (Überschriften, Listen, Fettdruck).",
         messages: [
           {
             role: "user",

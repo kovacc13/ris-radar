@@ -407,7 +407,7 @@ export default function RisSearch() {
                             <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
                           </a>
                         )}
-                        {result.url && typ === "judikatur" && (
+                        {result.url && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -415,7 +415,7 @@ export default function RisSearch() {
                             onClick={() => setAnalyze({ url: result.url, gericht: result.gericht, gz: result.gz, question: "", loading: false, summary: null, error: null })}
                           >
                             <Sparkles className="h-3.5 w-3.5" />
-                            Frage zum Urteil
+                            Frage zum Dokument
                           </Button>
                         )}
                       </div>
@@ -452,11 +452,11 @@ export default function RisSearch() {
           <div className="space-y-4 pt-2">
             <div>
               <Label htmlFor="analyze-question" className="text-sm font-medium mb-2 block">
-                Ihre Frage zum Urteil
+                Ihre Frage zum Dokument
               </Label>
               <Textarea
                 id="analyze-question"
-                placeholder="z.B. Was sagt das Urteil zur Kündigungsfrist? Welche Normen wurden angewendet?"
+                placeholder="z.B. Was bedeutet das für mich? Welche Auswirkungen hat das? Was muss ich beachten?"
                 value={analyze?.question ?? ""}
                 onChange={(e) => setAnalyze((prev) => prev && { ...prev, question: e.target.value })}
                 className="min-h-[80px] resize-none"
