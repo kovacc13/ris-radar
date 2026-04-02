@@ -110,7 +110,7 @@ export default function RisSearch() {
     if (searchTerm.trim()) {
       setPage(1);
       setActiveSearch(searchTerm.trim());
-      doSearch({ term: searchTerm.trim(), pageNum: 1 });
+      doSearch({ term: searchTerm.trim(), pageNum: 1, searchTyp: typ, searchGericht: gericht });
     }
   };
 
@@ -191,7 +191,7 @@ export default function RisSearch() {
 
           {/* Typ-Auswahl */}
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-muted-foreground mr-1">Suche in:</span>
+            <span className="text-sm text-muted-foreground mr-1 hidden sm:inline">Suche in:</span>
             {([
               { key: "judikatur", label: "Urteile" },
               { key: "bundesrecht", label: "Bundesgesetze" },
@@ -202,10 +202,10 @@ export default function RisSearch() {
                 key={key}
                 type="button"
                 onClick={() => handleTypChange(key)}
-                className={`text-sm px-3 py-1 rounded-full border transition-all font-medium ${
+                className={`text-sm px-4 py-2 min-h-[44px] rounded-full border transition-all font-medium ${
                   typ === key
                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                    : "bg-card text-muted-foreground border-border hover:border-accent hover:text-accent"
+                    : "bg-card text-muted-foreground border-border hover:border-accent hover:text-accent active:bg-accent/10"
                 }`}
               >
                 {label}
@@ -216,16 +216,16 @@ export default function RisSearch() {
           {/* Gerichts-Auswahl (nur bei Judikatur) */}
           {typ === "judikatur" && (
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm text-muted-foreground mr-1">Gericht:</span>
+              <span className="text-sm text-muted-foreground mr-1 hidden sm:inline">Gericht:</span>
               {GERICHTE.map((g) => (
                 <button
                   key={g}
                   type="button"
                   onClick={() => handleGerichtChange(g)}
-                  className={`text-sm px-3 py-1 rounded-full border transition-all font-medium ${
+                  className={`text-sm px-4 py-2 min-h-[44px] rounded-full border transition-all font-medium ${
                     gericht === g
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-card text-muted-foreground border-border hover:border-accent hover:text-accent"
+                      : "bg-card text-muted-foreground border-border hover:border-accent hover:text-accent active:bg-accent/10"
                   }`}
                 >
                   {g}
@@ -236,14 +236,14 @@ export default function RisSearch() {
 
           {/* Schnellsuche */}
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-muted-foreground mr-1">Schnellsuche:</span>
+            <span className="text-sm text-muted-foreground mr-1 hidden sm:inline">Schnellsuche:</span>
             {QUICK_SEARCHES.map((term) => (
               <Button
                 key={term}
                 variant="outline"
                 size="sm"
                 onClick={() => handleQuickSearch(term)}
-                className="rounded-full text-xs"
+                className="rounded-full text-xs min-h-[40px] px-3"
                 type="button"
               >
                 {term}
