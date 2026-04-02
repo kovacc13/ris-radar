@@ -17,10 +17,19 @@ export const metadata: Metadata = {
   title: "RIS Radar – Österreichische Rechtsrecherche",
   description:
     "Judikatur und Bundesrecht live durchsuchen – OGH, VwGH, VfGH, BVwG. Bereitgestellt von Dr. Christian Kovac.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "RIS Radar",
+  },
   openGraph: {
     title: "RIS Radar – Österreichische Rechtsrecherche",
     description: "Judikatur und Bundesrecht aus dem Rechtsinformationssystem des Bundes live durchsuchen.",
     type: "website",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
 };
 
@@ -35,21 +44,20 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {/* Header */}
-        <header className="bg-primary text-primary-foreground py-8 md:py-10 border-b-4 border-accent">
+        {/* Header – kompakt auf Mobile */}
+        <header className="bg-primary text-primary-foreground py-4 md:py-8 border-b-4 border-accent">
           <div className="container mx-auto px-4 max-w-5xl">
-            <div className="flex items-center gap-3 mb-2">
-              <Scale className="h-7 w-7 text-accent" />
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-serif">
+            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+              <Scale className="h-5 w-5 md:h-7 md:w-7 text-accent" />
+              <h1 className="text-xl md:text-3xl font-bold tracking-tight font-serif">
                 RIS Radar
               </h1>
             </div>
-            <p className="text-primary-foreground/80 text-base max-w-2xl">
-              Österreichisches Rechtsinformationssystem – Judikatur &amp; Bundesrecht live durchsuchen
+            <p className="text-primary-foreground/80 text-sm md:text-base max-w-2xl hidden sm:block">
+              Judikatur &amp; Bundesrecht live durchsuchen
             </p>
-            <p className="text-primary-foreground/50 text-sm mt-2">
-              Bereitgestellt von{" "}
-              <em>Dr. Christian Kovac</em> – KI-Unternehmensberatung |{" "}
+            <p className="text-primary-foreground/50 text-xs md:text-sm mt-1 md:mt-2">
+              <em>Dr. Christian Kovac</em> – KI-Beratung |{" "}
               <a
                 href="https://christian-kovac.at"
                 target="_blank"

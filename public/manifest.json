@@ -1,0 +1,18 @@
+{
+  "name": "RIS Radar – Rechtsrecherche",
+  "short_name": "RIS Radar",
+  "description": "Österreichische Judikatur & Bundesrecht live durchsuchen mit KI-Analyse",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a3a52",
+  "theme_color": "#1a3a52",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
