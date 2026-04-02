@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     });
     const html = await risResponse.text();
 
-    // HTML grob bereinigen – nur den Text-Inhalt extrahieren
+    // HTML bereinigen – nur den Text-Inhalt extrahieren
     const textContent = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
@@ -41,31 +41,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // OpenAI-kompatible API für KI-Analyse
-    const apiKey = process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
+    // Anthropic Claude API für KI-Analyse
+    const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "KI-Integration nicht konfiguriert (OPENAI_API_KEY fehlt)." },
+        { error: "KI-Integration nicht konfiguriert (ANTHROPIC_API_KEY fehlt)." },
         { status: 500 }
       );
     }
 
-    const completion = await fetch(`${baseUrl}/chat/completions`, {
+    const completion = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+        model: process.env.CLAUDE_MODEL ?? "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: "Du bist ein österreichischer Rechtsexperte. Analysiere den folgenden Urteilstext und beantworte die Frage des Nutzers präzise und verständlich auf Deutsch. Zitiere relevante Passagen wenn hilfreich. Halte die Antwort strukturiert und klar.",
         messages: [
-          {
-            role: "system",
-            content:
-              "Du bist ein österreichischer Rechtsexperte. Analysiere den folgenden Urteilstext und beantworte die Frage des Nutzers präzise und verständlich auf Deutsch. Zitiere relevante Passagen wenn hilfreich. Halte die Antwort strukturiert und klar.",
-          },
           {
             role: "user",
             content: `Urteilstext:\n\n${textContent}\n\n---\n\nFrage: ${body.question.trim()}`,
@@ -76,13 +73,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (!completion.ok) {
-      throw new Error(`OpenAI API Fehler: ${completion.status}`);
+      const errBody = await completion.text();
+      console.error("Anthropic API Error:", completion.status, errBody);
+      throw new Error(`Anthropic API Fehler: ${completion.status}`);
     }
 
     const result = (await completion.json()) as {
-      choices: Array<{ message: { content: string } }>;
+      content: Array<{ type: string; text: string }>;
     };
-    const summary = result.choices[0]?.message?.content ?? "Keine Antwort erhalten.";
+    const summary = result.content
+      .filter((block) => block.type === "text")
+      .map((block) => block.text)
+      .join("\n\n") || "Keine Antwort erhalten.";
 
     return NextResponse.json({ summary });
   } catch (err) {
