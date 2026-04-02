@@ -1,0 +1,204 @@
+// RIS API Client – Rechtsinformationssystem des Bundes
+// Quelle: data.bka.gv.at/ris/api/v2.6 (OGD, CC BY 4.0)
+
+const RIS_BASE = "https://data.bka.gv.at/ris/api/v2.6";
+
+export type RisResultItem = {
+  gericht: string;
+  gz: string;
+  datum: string;
+  normen: string;
+  schlagworte: string;
+  url: string;
+};
+
+export type RisSearchResult = {
+  total: number;
+  results: RisResultItem[];
+};
+
+export type RisSearchParams = {
+  q: string;
+  limit?: number;
+  page?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  gericht?: string;
+};
+
+const LIMIT_MAP: Record<number, string> = {
+  20: "Twenty",
+  50: "Fifty",
+  100: "OneHundred",
+};
+
+function normalizeOghItem(ref: Record<string, unknown>): RisResultItem {
+  const data = (ref["Data"] as Record<string, unknown>) ?? {};
+  const meta = (data["Metadaten"] as Record<string, unknown>) ?? {};
+  const tech = (meta["Technisch"] as Record<string, unknown>) ?? {};
+  const allg = (meta["Allgemein"] as Record<string, unknown>) ?? {};
+  const jud = (meta["Judikatur"] as Record<string, unknown>) ?? {};
+
+  let gz = jud["Geschaeftszahl"];
+  if (typeof gz === "object" && gz !== null && !Array.isArray(gz)) {
+    gz = (gz as Record<string, unknown>)["item"];
+  }
+  if (Array.isArray(gz)) gz = gz.slice(0, 3).join("; ");
+
+  let normen = jud["Normen"];
+  if (typeof normen === "object" && normen !== null && !Array.isArray(normen)) {
+    normen = (normen as Record<string, unknown>)["item"];
+  }
+  if (Array.isArray(normen)) normen = normen.slice(0, 5).join(", ");
+
+  let schlagworte = jud["Schlagworte"];
+  if (typeof schlagworte === "object" && schlagworte !== null && !Array.isArray(schlagworte)) {
+    schlagworte = (schlagworte as Record<string, unknown>)["item"];
+  }
+  if (Array.isArray(schlagworte)) schlagworte = schlagworte.join("; ");
+
+  return {
+    gericht: String(tech["Organ"] ?? "?"),
+    gz: String(gz ?? "?").slice(0, 100),
+    datum: String(jud["Entscheidungsdatum"] ?? "?"),
+    normen: String(normen ?? "").slice(0, 150),
+    schlagworte: String(schlagworte ?? ""),
+    url: String(allg["DokumentUrl"] ?? ""),
+  };
+}
+
+// Judikatur-Suche über RIS REST API (OGH, VwGH, VfGH, BVwG)
+export async function searchJudikatur(params: RisSearchParams): Promise<RisSearchResult> {
+  const { q, limit = 20, page = 1, dateFrom, dateTo, gericht = "OGH" } = params;
+
+  // Applikations-Mapping für die verschiedenen Gerichte
+  const appMap: Record<string, string> = {
+    OGH: "Justiz",
+    VwGH: "Vwgh",
+    VfGH: "Vfgh",
+    BVwG: "Bvwg",
+  };
+
+  const app = appMap[gericht] ?? "Justiz";
+  const docsPerPage = LIMIT_MAP[limit] ?? "Twenty";
+
+  const searchParams = new URLSearchParams({
+    Suchworte: q,
+    DokumenteProSeite: docsPerPage,
+    Seitennummer: String(page),
+  });
+
+  if (dateFrom) {
+    searchParams.set("EntscheidungsdatumVon", dateFrom);
+  }
+  if (dateTo) {
+    searchParams.set("EntscheidungsdatumBis", dateTo);
+  }
+
+  const url = `${RIS_BASE}/${app}?${searchParams.toString()}`;
+
+  const response = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(30000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`RIS API Fehler: ${response.status} ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as Record<string, unknown>;
+  const searchResult = (data["OgdSearchResult"] as Record<string, unknown>) ?? {};
+
+  if ("Error" in searchResult) {
+    return { total: 0, results: [] };
+  }
+
+  const docs = (searchResult["OgdDocumentResults"] as Record<string, unknown>) ?? {};
+  const hits = (docs["Hits"] as Record<string, unknown>) ?? {};
+  const total = parseInt(String(hits["#text"] ?? "0"), 10) || 0;
+
+  let refs = docs["OgdDocumentReference"];
+  if (!refs) refs = [];
+  if (!Array.isArray(refs)) refs = [refs];
+
+  const results = (refs as Record<string, unknown>[]).map(normalizeOghItem);
+
+  return { total, results };
+}
+
+// Bundesrecht-Suche (ABGB, UGB, MRG, KSchG etc.)
+export async function searchBundesrecht(params: {
+  q?: string;
+  gesetz?: string;
+  paragraph?: string;
+  limit?: number;
+  page?: number;
+}): Promise<RisSearchResult> {
+  const { q, gesetz, paragraph, limit = 20, page = 1 } = params;
+  const docsPerPage = LIMIT_MAP[limit] ?? "Twenty";
+
+  const searchParams = new URLSearchParams({
+    DokumenteProSeite: docsPerPage,
+    Seitennummer: String(page),
+  });
+
+  if (q) searchParams.set("Suchworte", q);
+  if (gesetz) searchParams.set("Titel", gesetz);
+  if (paragraph) searchParams.set("Paragraf", paragraph);
+
+  const url = `${RIS_BASE}/Bundesrecht?${searchParams.toString()}`;
+
+  const response = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(30000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`RIS API Fehler: ${response.status}`);
+  }
+
+  const data = (await response.json()) as Record<string, unknown>;
+  const searchResult = (data["OgdSearchResult"] as Record<string, unknown>) ?? {};
+
+  if ("Error" in searchResult) {
+    return { total: 0, results: [] };
+  }
+
+  const docs = (searchResult["OgdDocumentResults"] as Record<string, unknown>) ?? {};
+  const hits = (docs["Hits"] as Record<string, unknown>) ?? {};
+  const total = parseInt(String(hits["#text"] ?? "0"), 10) || 0;
+
+  let refs = docs["OgdDocumentReference"];
+  if (!refs) refs = [];
+  if (!Array.isArray(refs)) refs = [refs];
+
+  const results = (refs as Record<string, unknown>[]).map((ref) => {
+    const r = ref as Record<string, unknown>;
+    const d = (r["Data"] as Record<string, unknown>) ?? {};
+    const meta = (d["Metadaten"] as Record<string, unknown>) ?? {};
+    const allg = (meta["Allgemein"] as Record<string, unknown>) ?? {};
+    const br = (meta["Bundesrecht"] as Record<string, unknown>) ?? {};
+    const tech = (meta["Technisch"] as Record<string, unknown>) ?? {};
+
+    let titel = br["Kurztitel"] ?? allg["Titel"] ?? "";
+    if (typeof titel === "object" && titel !== null) {
+      titel = (titel as Record<string, unknown>)["item"] ?? "";
+    }
+
+    let paragrafInfo = br["ArtikelParagraphAnlage"] ?? "";
+    if (typeof paragrafInfo === "object" && paragrafInfo !== null) {
+      paragrafInfo = (paragrafInfo as Record<string, unknown>)["item"] ?? "";
+    }
+
+    return {
+      gericht: String(tech["Organ"] ?? "Bundesrecht"),
+      gz: String(paragrafInfo || titel || "?").slice(0, 100),
+      datum: String(br["Inkrafttretedatum"] ?? allg["Aenderungsdatum"] ?? "?"),
+      normen: String(titel ?? ""),
+      schlagworte: String(br["Beachte"] ?? ""),
+      url: String(allg["DokumentUrl"] ?? ""),
+    };
+  });
+
+  return { total, results };
+}
