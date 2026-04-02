@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { searchJudikatur, searchBundesrecht } from "@/lib/ris-client";
 
 export const maxDuration = 30;
+export const preferredRegion = "fra1"; // Frankfurt – nah an der AT RIS API
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;

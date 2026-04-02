@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 60;
+export const preferredRegion = "fra1"; // Frankfurt – nah an der AT RIS API
 
 export async function POST(request: NextRequest) {
   const body = await request.json() as { url?: string; question?: string };
