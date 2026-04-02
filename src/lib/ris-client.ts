@@ -9,6 +9,26 @@ const RIS_HEADERS: Record<string, string> = {
   "User-Agent": "RIS-Radar/1.0 (https://ris-radar.vercel.app; Rechtsrecherche-Tool)",
 };
 
+// Robuster Fetch mit Retry-Logik
+async function fetchWithRetry(url: string, options: RequestInit, retries = 2): Promise<Response> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(25000),
+      });
+      if (response.ok || attempt === retries) return response;
+      console.warn(`[RIS] Attempt ${attempt} failed: HTTP ${response.status}, retrying...`);
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.warn(`[RIS] Attempt ${attempt} error: ${err}, retrying...`);
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
+  }
+  throw new Error("Alle Retry-Versuche fehlgeschlagen");
+}
+
 export type RisResultItem = {
   gericht: string;
   gz: string;
@@ -103,12 +123,9 @@ export async function searchJudikatur(params: RisSearchParams): Promise<RisSearc
 
   const url = `${RIS_BASE}/${app}?${searchParams.toString()}`;
 
-  console.log(`[RIS] Fetching: ${url}`);
+  console.log(`[RIS] Judikatur: ${url}`);
 
-  const response = await fetch(url, {
-    headers: RIS_HEADERS,
-    signal: AbortSignal.timeout(30000),
-  });
+  const response = await fetchWithRetry(url, { headers: RIS_HEADERS });
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
@@ -157,12 +174,9 @@ export async function searchBundesrecht(params: {
   if (paragraph) searchParams.set("Paragraf", paragraph);
 
   const url = `${RIS_BASE}/Bundesrecht?${searchParams.toString()}`;
-  console.log(`[RIS] Fetching: ${url}`);
+  console.log(`[RIS] Bundesrecht: ${url}`);
 
-  const response = await fetch(url, {
-    headers: RIS_HEADERS,
-    signal: AbortSignal.timeout(30000),
-  });
+  const response = await fetchWithRetry(url, { headers: RIS_HEADERS });
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
