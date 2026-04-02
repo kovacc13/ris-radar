@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-export async function GET() {
-  const correctPassword = process.env.APP_PASSWORD;
+function getValidPasswords(): string[] {
+  const passwords: string[] = [];
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith("APP_PASSWORD") && value) {
+      passwords.push(value);
+    }
+  }
+  return passwords;
+}
 
-  // Kein Passwort gesetzt → jeder kommt rein
-  if (!correctPassword) {
+export async function GET() {
+  const passwords = getValidPasswords();
+
+  if (passwords.length === 0) {
     return NextResponse.json({ ok: true });
   }
 
@@ -16,6 +25,10 @@ export async function GET() {
     return NextResponse.json({ ok: false });
   }
 
-  const expected = Buffer.from(`ok:${correctPassword}`).toString("base64");
-  return NextResponse.json({ ok: token === expected });
+  // Prüfe ob der Token zu irgendeinem gültigen Passwort passt
+  const isValid = passwords.some(
+    (pw) => token === Buffer.from(`ok:${pw}`).toString("base64")
+  );
+
+  return NextResponse.json({ ok: isValid });
 }
