@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Search, ChevronDown, ChevronUp, ExternalLink,
+  Search, ChevronDown, ExternalLink,
   Calendar, ShieldAlert, Sparkles, Loader2, Copy, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -75,8 +75,6 @@ export default function RisSearch() {
   const [dateTo, setDateTo] = useState("");
   const [limit, setLimit] = useState("20");
   const [page, setPage] = useState(1);
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
-
   const [data, setData] = useState<RisSearchResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,12 +209,11 @@ export default function RisSearch() {
             </Button>
           </div>
 
-          {/* Typ-Auswahl */}
+          {/* Typ-Auswahl – immer sichtbar, kompakt */}
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-muted-foreground mr-1 hidden sm:inline">Suche in:</span>
             {([
               { key: "judikatur", label: "Urteile" },
-              { key: "bundesrecht", label: "Bundesgesetze" },
+              { key: "bundesrecht", label: "Gesetze" },
               { key: "landesrecht", label: "Landesrecht" },
               { key: "bgbl", label: "BGBl" },
             ] as const).map(({ key, label }) => (
@@ -233,83 +230,84 @@ export default function RisSearch() {
                 {label}
               </button>
             ))}
+
+            {/* Gerichts-Auswahl inline (nur bei Urteile) */}
+            {typ === "judikatur" && (
+              <>
+                <span className="text-muted-foreground mx-1 hidden sm:inline">|</span>
+                {GERICHTE.map((g) => (
+                  <button
+                    key={g.key}
+                    type="button"
+                    onClick={() => handleGerichtChange(g.key)}
+                    className={`text-xs px-3 py-1.5 min-h-[36px] rounded-full border transition-all ${
+                      gericht === g.key
+                        ? "bg-accent text-white border-accent shadow-sm font-medium"
+                        : "bg-card text-muted-foreground border-border hover:border-accent hover:text-accent active:bg-accent/10"
+                    }`}
+                    title={g.desc}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </>
+            )}
           </div>
 
-          {/* Gerichts-Auswahl (nur bei Judikatur) */}
-          {typ === "judikatur" && (
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm text-muted-foreground mr-1 hidden sm:inline">Gericht:</span>
-              {GERICHTE.map((g) => (
-                <button
-                  key={g.key}
-                  type="button"
-                  onClick={() => handleGerichtChange(g.key)}
-                  className={`text-sm px-4 py-2 min-h-[44px] rounded-full border transition-all font-medium ${
-                    gericht === g.key
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-card text-muted-foreground border-border hover:border-accent hover:text-accent active:bg-accent/10"
-                  }`}
-                  title={g.desc}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Schnellsuche nach Themengruppen */}
-          <div className="space-y-2">
-            {QUICK_SEARCH_GROUPS.map((group) => (
-              <div key={group.label} className="flex flex-wrap gap-1.5 items-center">
-                <span className="text-xs text-muted-foreground mr-1 w-20 shrink-0 hidden sm:inline">{group.label}:</span>
-                {group.terms.map((term) => (
-                  <Button
-                    key={term}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickSearch(term)}
-                    className="rounded-full text-xs min-h-[40px] px-3"
-                    type="button"
-                  >
-                    {term}
-                  </Button>
+          {/* Schnellsuche + Filter – aufklappbar */}
+          <Collapsible className="border-t pt-3 mt-1">
+            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary cursor-pointer">
+              <ChevronDown className="h-4 w-4" />
+              Schnellsuche &amp; Filter
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-4 space-y-4">
+              {/* Schnellsuche-Tags */}
+              <div className="space-y-2">
+                {QUICK_SEARCH_GROUPS.map((group) => (
+                  <div key={group.label} className="flex flex-wrap gap-1.5 items-center">
+                    <span className="text-xs text-muted-foreground w-20 shrink-0">{group.label}:</span>
+                    {group.terms.map((term) => (
+                      <Button
+                        key={term}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleQuickSearch(term)}
+                        className="rounded-full text-xs min-h-[36px] px-3"
+                        type="button"
+                      >
+                        {term}
+                      </Button>
+                    ))}
+                  </div>
                 ))}
               </div>
-            ))}
-          </div>
 
-          {/* Erweiterte Filter */}
-          <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen} className="border-t pt-3 mt-1">
-            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary cursor-pointer">
-              {isAdvancedOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              Erweiterte Filter
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-4 pb-2">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-muted/50 p-4 rounded-md border">
-                <div className="space-y-2">
-                  <Label htmlFor="dateFrom" className="flex items-center gap-2 text-sm font-medium">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+              {/* Datum + Ergebnisse Filter */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/50 p-4 rounded-md border">
+                <div className="space-y-1.5">
+                  <Label htmlFor="dateFrom" className="flex items-center gap-2 text-xs font-medium">
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                     Datum von
                   </Label>
-                  <Input id="dateFrom" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                  <Input id="dateFrom" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dateTo" className="flex items-center gap-2 text-sm font-medium">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div className="space-y-1.5">
+                  <Label htmlFor="dateTo" className="flex items-center gap-2 text-xs font-medium">
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                     Datum bis
                   </Label>
-                  <Input id="dateTo" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                  <Input id="dateTo" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="limit" className="text-sm font-medium">Ergebnisse pro Seite</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="limit" className="text-xs font-medium">Pro Seite</Label>
                   <Select value={limit} onValueChange={(val) => { if (val) setLimit(val); }}>
-                    <SelectTrigger id="limit">
+                    <SelectTrigger id="limit" className="h-9">
                       <SelectValue placeholder="20" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="20">20 Ergebnisse</SelectItem>
-                      <SelectItem value="50">50 Ergebnisse</SelectItem>
-                      <SelectItem value="100">100 Ergebnisse</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
