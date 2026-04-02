@@ -97,7 +97,7 @@ function normalizeOghItem(ref: Record<string, unknown>): RisResultItem {
 export async function searchJudikatur(params: RisSearchParams): Promise<RisSearchResult> {
   const { q, limit = 20, page = 1, dateFrom, dateTo, gericht = "OGH" } = params;
 
-  // Applikations-Mapping für die verschiedenen Gerichte
+  // Alle Gerichte laufen über /Judikatur mit Applikation-Parameter
   const appMap: Record<string, string> = {
     OGH: "Justiz",
     VwGH: "Vwgh",
@@ -105,10 +105,11 @@ export async function searchJudikatur(params: RisSearchParams): Promise<RisSearc
     BVwG: "Bvwg",
   };
 
-  const app = appMap[gericht] ?? "Justiz";
+  const applikation = appMap[gericht] ?? "Justiz";
   const docsPerPage = LIMIT_MAP[limit] ?? "Twenty";
 
   const searchParams = new URLSearchParams({
+    Applikation: applikation,
     Suchworte: q,
     DokumenteProSeite: docsPerPage,
     Seitennummer: String(page),
@@ -121,7 +122,7 @@ export async function searchJudikatur(params: RisSearchParams): Promise<RisSearc
     searchParams.set("EntscheidungsdatumBis", dateTo);
   }
 
-  const url = `${RIS_BASE}/${app}?${searchParams.toString()}`;
+  const url = `${RIS_BASE}/Judikatur?${searchParams.toString()}`;
 
   console.log(`[RIS] Judikatur: ${url}`);
 
