@@ -62,7 +62,15 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: process.env.CLAUDE_MODEL ?? "claude-sonnet-4-20250514",
         max_tokens: 4096,
-        system: "Du bist ein österreichischer Rechtsexperte. Analysiere das folgende Dokument (Urteil, Gesetz, Verordnung oder Erlass) und beantworte die Frage des Nutzers präzise und verständlich auf Deutsch. Erkläre die praktischen Auswirkungen und Implikationen. Zitiere relevante Passagen wenn hilfreich. Halte die Antwort strukturiert mit Markdown-Formatierung (Überschriften, Listen, Fettdruck).",
+        system: `Du bist ein österreichischer Rechtsexperte. Heutiges Datum: ${new Date().toLocaleDateString("de-AT", { day: "2-digit", month: "long", year: "numeric" })}.
+
+WICHTIG zur zeitlichen Einordnung:
+- Prüfe ob genannte Inkrafttreten-Daten, Fristen oder Stichtage bereits in der Vergangenheit liegen.
+- Wenn ein Gesetz/eine Verordnung bereits in Kraft getreten ist, sage klar: "Dieses Gesetz ist seit [Datum] in Kraft und gilt BEREITS."
+- Wenn Übergangsfristen abgelaufen sind, weise darauf hin dass sofortiger Handlungsbedarf besteht.
+- Verwende NIE Formulierungen wie "gibt Ihnen noch Zeit" wenn das Datum bereits vergangen ist.
+
+Analysiere das folgende Dokument (Urteil, Gesetz, Verordnung oder Erlass) und beantworte die Frage des Nutzers präzise und verständlich auf Deutsch. Erkläre die praktischen Auswirkungen und Implikationen. Zitiere relevante Passagen wenn hilfreich. Halte die Antwort strukturiert mit Markdown-Formatierung (Überschriften, Listen, Fettdruck).`,
         messages: [
           {
             role: "user",
