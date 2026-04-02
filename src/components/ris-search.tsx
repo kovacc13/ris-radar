@@ -41,8 +41,30 @@ type AnalyzeState = {
   error: string | null;
 };
 
-const QUICK_SEARCHES = ["Mietrecht", "WEG", "Kaufvertrag", "Gewährleistung", "Grundbuch", "§ 879 ABGB"];
-const GERICHTE = ["OGH", "VwGH", "VfGH", "BVwG"] as const;
+// Schnellsuche nach Zielgruppe gruppiert
+const QUICK_SEARCH_GROUPS = [
+  {
+    label: "Allgemein",
+    terms: ["Mietrecht", "Kaufvertrag", "Gewährleistung", "Grundbuch", "§ 879 ABGB"],
+  },
+  {
+    label: "Steuerrecht",
+    terms: ["Vorsteuerabzug", "Liebhaberei", "Einkommensteuer", "Umsatzsteuer", "BAO Verjährung", "Betriebsausgabe"],
+  },
+  {
+    label: "Immobilien",
+    terms: ["Liegenschaftsbewertung", "WEG", "Immobilienertragsteuer", "Bestandsvertrag", "Grunderwerbsteuer"],
+  },
+];
+
+const GERICHTE = [
+  { key: "OGH", label: "OGH", desc: "Zivilrecht" },
+  { key: "VwGH", label: "VwGH", desc: "Steuer/Verwaltung" },
+  { key: "VfGH", label: "VfGH", desc: "Verfassung" },
+  { key: "BVwG", label: "BVwG", desc: "Verwaltung" },
+  { key: "LVwG", label: "LVwG", desc: "Landesverwaltung" },
+  { key: "DSK", label: "DSB", desc: "Datenschutz" },
+] as const;
 
 export default function RisSearch() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -219,35 +241,40 @@ export default function RisSearch() {
               <span className="text-sm text-muted-foreground mr-1 hidden sm:inline">Gericht:</span>
               {GERICHTE.map((g) => (
                 <button
-                  key={g}
+                  key={g.key}
                   type="button"
-                  onClick={() => handleGerichtChange(g)}
+                  onClick={() => handleGerichtChange(g.key)}
                   className={`text-sm px-4 py-2 min-h-[44px] rounded-full border transition-all font-medium ${
-                    gericht === g
+                    gericht === g.key
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-card text-muted-foreground border-border hover:border-accent hover:text-accent active:bg-accent/10"
                   }`}
+                  title={g.desc}
                 >
-                  {g}
+                  {g.label}
                 </button>
               ))}
             </div>
           )}
 
-          {/* Schnellsuche */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-muted-foreground mr-1 hidden sm:inline">Schnellsuche:</span>
-            {QUICK_SEARCHES.map((term) => (
-              <Button
-                key={term}
-                variant="outline"
-                size="sm"
-                onClick={() => handleQuickSearch(term)}
-                className="rounded-full text-xs min-h-[40px] px-3"
-                type="button"
-              >
-                {term}
-              </Button>
+          {/* Schnellsuche nach Themengruppen */}
+          <div className="space-y-2">
+            {QUICK_SEARCH_GROUPS.map((group) => (
+              <div key={group.label} className="flex flex-wrap gap-1.5 items-center">
+                <span className="text-xs text-muted-foreground mr-1 w-20 shrink-0 hidden sm:inline">{group.label}:</span>
+                {group.terms.map((term) => (
+                  <Button
+                    key={term}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickSearch(term)}
+                    className="rounded-full text-xs min-h-[40px] px-3"
+                    type="button"
+                  >
+                    {term}
+                  </Button>
+                ))}
+              </div>
             ))}
           </div>
 

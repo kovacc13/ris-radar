@@ -103,6 +103,8 @@ export async function searchJudikatur(params: RisSearchParams): Promise<RisSearc
     VwGH: "Vwgh",
     VfGH: "Vfgh",
     BVwG: "Bvwg",
+    LVwG: "Lvwg",
+    DSK: "Dsk",
   };
 
   const applikation = appMap[gericht] ?? "Justiz";
