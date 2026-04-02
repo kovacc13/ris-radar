@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import {
   Search, ChevronDown, ChevronUp, ExternalLink,
   Calendar, ShieldAlert, Sparkles, Loader2, Copy, Check,
@@ -61,47 +61,55 @@ export default function RisSearch() {
   const [analyze, setAnalyze] = useState<AnalyzeState | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const doSearch = useCallback(
-    async (term: string, pageNum: number) => {
-      if (!term.trim()) return;
-      setIsLoading(true);
-      setError(null);
+  // Suche direkt mit übergebenen Parametern – keine Stale-Closure-Probleme
+  const doSearch = async (overrides: {
+    term?: string;
+    pageNum?: number;
+    searchTyp?: string;
+    searchGericht?: string;
+  } = {}) => {
+    const term = overrides.term ?? activeSearch;
+    const pageNum = overrides.pageNum ?? 1;
+    const searchTypValue = overrides.searchTyp ?? typ;
+    const searchGerichtValue = overrides.searchGericht ?? gericht;
 
-      const params = new URLSearchParams({
-        q: term,
-        typ,
-        limit,
-        page: String(pageNum),
-        gericht,
-      });
-      if (dateFrom) params.set("dateFrom", dateFrom);
-      if (dateTo) params.set("dateTo", dateTo);
+    if (!term.trim()) return;
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        const res = await fetch(`/api/ris/search?${params}`);
-        const json = await res.json();
-        if (!res.ok) {
-          setError(json.error ?? "Unbekannter Fehler");
-          setData(null);
-        } else {
-          setData(json as RisSearchResult);
-        }
-      } catch {
-        setError("Verbindungsfehler – bitte erneut versuchen.");
+    const params = new URLSearchParams({
+      q: term,
+      typ: searchTypValue,
+      limit,
+      page: String(pageNum),
+      gericht: searchGerichtValue,
+    });
+    if (dateFrom) params.set("dateFrom", dateFrom);
+    if (dateTo) params.set("dateTo", dateTo);
+
+    try {
+      const res = await fetch(`/api/ris/search?${params}`);
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? "Unbekannter Fehler");
         setData(null);
-      } finally {
-        setIsLoading(false);
+      } else {
+        setData(json as RisSearchResult);
       }
-    },
-    [typ, limit, gericht, dateFrom, dateTo]
-  );
+    } catch {
+      setError("Verbindungsfehler – bitte erneut versuchen.");
+      setData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (searchTerm.trim()) {
       setPage(1);
       setActiveSearch(searchTerm.trim());
-      doSearch(searchTerm.trim(), 1);
+      doSearch({ term: searchTerm.trim(), pageNum: 1 });
     }
   };
 
@@ -109,13 +117,25 @@ export default function RisSearch() {
     setSearchTerm(term);
     setPage(1);
     setActiveSearch(term);
-    doSearch(term, 1);
+    doSearch({ term, pageNum: 1 });
+  };
+
+  const handleTypChange = (newTyp: "judikatur" | "bundesrecht") => {
+    setTyp(newTyp);
+    setPage(1);
+    if (activeSearch) doSearch({ pageNum: 1, searchTyp: newTyp });
+  };
+
+  const handleGerichtChange = (newGericht: string) => {
+    setGericht(newGericht);
+    setPage(1);
+    if (activeSearch) doSearch({ pageNum: 1, searchGericht: newGericht });
   };
 
   const handleNextPage = () => {
     const next = page + 1;
     setPage(next);
-    doSearch(activeSearch, next);
+    doSearch({ pageNum: next });
   };
 
   const handleCopy = () => {
@@ -175,7 +195,7 @@ export default function RisSearch() {
               <button
                 key={t}
                 type="button"
-                onClick={() => { setTyp(t); setPage(1); }}
+                onClick={() => handleTypChange(t)}
                 className={`text-sm px-3 py-1 rounded-full border transition-all font-medium ${
                   typ === t
                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
@@ -195,7 +215,7 @@ export default function RisSearch() {
                 <button
                   key={g}
                   type="button"
-                  onClick={() => { setGericht(g); setPage(1); }}
+                  onClick={() => handleGerichtChange(g)}
                   className={`text-sm px-3 py-1 rounded-full border transition-all font-medium ${
                     gericht === g
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"

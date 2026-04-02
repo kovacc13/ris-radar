@@ -3,6 +3,12 @@
 
 const RIS_BASE = "https://data.bka.gv.at/ris/api/v2.6";
 
+// Gemeinsame Headers für alle RIS-Requests
+const RIS_HEADERS: Record<string, string> = {
+  Accept: "application/json",
+  "User-Agent": "RIS-Radar/1.0 (https://ris-radar.vercel.app; Rechtsrecherche-Tool)",
+};
+
 export type RisResultItem = {
   gericht: string;
   gz: string;
@@ -97,12 +103,16 @@ export async function searchJudikatur(params: RisSearchParams): Promise<RisSearc
 
   const url = `${RIS_BASE}/${app}?${searchParams.toString()}`;
 
+  console.log(`[RIS] Fetching: ${url}`);
+
   const response = await fetch(url, {
-    headers: { Accept: "application/json" },
+    headers: RIS_HEADERS,
     signal: AbortSignal.timeout(30000),
   });
 
   if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    console.error(`[RIS] HTTP ${response.status}: ${body.slice(0, 500)}`);
     throw new Error(`RIS API Fehler: ${response.status} ${response.statusText}`);
   }
 
@@ -147,13 +157,16 @@ export async function searchBundesrecht(params: {
   if (paragraph) searchParams.set("Paragraf", paragraph);
 
   const url = `${RIS_BASE}/Bundesrecht?${searchParams.toString()}`;
+  console.log(`[RIS] Fetching: ${url}`);
 
   const response = await fetch(url, {
-    headers: { Accept: "application/json" },
+    headers: RIS_HEADERS,
     signal: AbortSignal.timeout(30000),
   });
 
   if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    console.error(`[RIS] HTTP ${response.status}: ${body.slice(0, 500)}`);
     throw new Error(`RIS API Fehler: ${response.status}`);
   }
 
