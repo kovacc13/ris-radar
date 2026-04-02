@@ -428,7 +428,7 @@ export default function RisSearch() {
 
       {/* KI-Analyse Dialog */}
       <Dialog open={!!analyze} onOpenChange={(open) => { if (!open) setAnalyze(null); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-serif text-primary">
               <Sparkles className="h-5 w-5 text-accent" />
